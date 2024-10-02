@@ -2,4 +2,4 @@
 *.pdb
 *.ilk
 *.obj
-
+*.a
