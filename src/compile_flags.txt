@@ -1,2 +1,4 @@
 -I
 C:\Program Files\vcpkg\installed\x64-windows\include\
+-I 
+/Users/galacticPast/Documents/raylib/src
