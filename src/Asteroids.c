@@ -2,204 +2,213 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#define DEBUG 
+#undef DEBUG
 #define SCREENWIDTH  1280
 #define SCREENHEIGHT 720 
 
 #define RADIUS 20 
 
-#define centerX SCREENWIDTH/2
-#define centerY SCREENHEIGHT/2
+#define CENTERX SCREENWIDTH/2
+#define CENTERY SCREENHEIGHT/2
 
+#define ASTEROIDCOUNT 10
 
-struct player 
+struct asteroid 
 {
     float angle;
-    Vector2 acceleration;
+    float radius;
     Vector2 velocity;
     Vector2 pos;
-    Vector2 up;
-    Vector2 left;
-    Vector2 right;
+};
+
+
+struct ship 
+{
+    float angle;
+    float acceleration;
+    Vector2 velocity;
+    Vector2 pos;
 };
 
 void printVector(Vector2* vec);
-void apply2dRotation(struct player* ship,Vector2* vec,float* angle);
+void apply2dRotation(Vector2* shipPos,Vector2* vec,float angle);
 
 int main(void)
 {
 
-    struct player ship= 
-    {
-        .pos = {(float)centerX,(float)centerY},
-        .up = {ship.pos.x, ship.pos.y - RADIUS},
-    };
-    Vector2 size = {5,5}; 
-
-    float rad0 = 4.7123;
-
-    float rad1 = 2.0944;
-    ship.right= ship.up;
-    apply2dRotation(&ship,&ship.right,&rad1);
-
-    float rad2 = 4.1887;
-    ship.left= ship.up;
-    apply2dRotation(&ship,&ship.left,&rad2);
-
     InitWindow(SCREENWIDTH, SCREENHEIGHT, "Asteroids");
 
+    struct asteroid asteroids[ASTEROIDCOUNT] = {};
+
+    for(int i = 0 ; i < ASTEROIDCOUNT; i++)
+    {
+        asteroids[i].angle = GetRandomValue(0, 360);
+        asteroids[i].radius = GetRandomValue(10,30);
+        asteroids[i].velocity.x = cos(asteroids[i].angle * DEG2RAD) * 2; 
+        asteroids[i].velocity.y = sin(asteroids[i].angle * DEG2RAD) * 2; 
+    }
+
+
+    struct ship ship= 
+    {
+        .pos = {(float)CENTERX,(float)CENTERY},
+    };
+
+    Vector2 size = {5,5}; 
     SetTargetFPS(60);               
-    int key = KEY_W;
-    float mag = 0.01;
+
     while (!WindowShouldClose())    
     {
-        if(IsKeyDown(key))
+
+        //ship angle 
+        if(IsKeyDown(KEY_D))
         {
-            switch(key)
-            {
-                case KEY_W:
-                    {
-                        ship.acceleration.y -= mag;
-                    }break;
-                case KEY_S:
-                    {
-                        ship.acceleration.y += mag;
-                    }break;
-                case KEY_A:
-                    {
-                        ship.acceleration.x -= mag;
-                    }break;
-                case KEY_D:
-                    {
-                        ship.acceleration.x += mag;
-                    }break;
-            } 
+            ship.angle += 5;
+        } 
+        if(IsKeyDown(KEY_A))
+        {
+            ship.angle -= 5;
+        } 
+
+        // acceleration  
+
+        if(IsKeyDown(KEY_W))
+        {
+            if(ship.acceleration < 1) ship.acceleration += 0.05;
         }
         else
         {
-            switch(key)
-            {
-                case KEY_W:
-                    {
-                        ship.acceleration.y = 0;
-                    }break;
-                case KEY_S:
-                    {
-                        ship.acceleration.y = 0;
-                    }break;
-                case KEY_A:
-                    {
-                        ship.acceleration.x = 0;
-                    }break;
-                case KEY_D:
-                    {
-                        ship.acceleration.x = 0;
-                    }break;
-            } 
-            key = GetKeyPressed();
+            if(ship.acceleration > 0) ship.acceleration -= 0.005;
+            else if(ship.acceleration < 0) ship.acceleration = 0;
         }
-        
-    
-        ship.velocity.x += ship.acceleration.x;
-        ship.velocity.y += ship.acceleration.y;
 
-        if(ship.velocity.x > 5)
+        if(IsKeyDown(KEY_S))
         {
-            ship.velocity.x = 5;
-        }
-        else if(ship.velocity.x < -5)
-        {
-            ship.velocity.x = -5;
-        }
-        if(ship.velocity.y > 5)
-        {
-            ship.velocity.y = 5;
-        }
-        else if(ship.velocity.y < -5)
-        {
-            ship.velocity.y = -5;
+            if(ship.acceleration > 0)ship.acceleration -= 0.005;
+            else if(ship.acceleration < 0)ship.acceleration = 0;
         }
 
-        ship.pos.x += ship.velocity.x;
-        ship.pos.y += ship.velocity.y;
-        ship.up.x += ship.velocity.x;
-        ship.up.y += ship.velocity.y;
-        ship.right.x += ship.velocity.x;
-        ship.right.y += ship.velocity.y;
-        ship.left.x += ship.velocity.x;
-        ship.left.y += ship.velocity.y;
+        //velocity
+        ship.velocity.x = cos(ship.angle * DEG2RAD) * 6;
+        ship.velocity.y = sin(ship.angle * DEG2RAD) * 6;
 
-        ////ship.right= ship.up;
-        //float ang1 = rad1 + ship.angle;
-        //apply2dRotation(&ship,&ship.right,&ang1);
-
-        //ship.left= ship.up;
-        //float ang2 = rad2 + ship.angle;
-        //apply2dRotation(&ship,&ship.left,&ang2);
-        apply2dRotation(&ship,&ship.up,&ship.angle);
-        apply2dRotation(&ship,&ship.left,&ship.angle);
-        apply2dRotation(&ship,&ship.right,&ship.angle);
-
+        //pos
+        ship.pos.x += (ship.velocity.x * ship.acceleration);
+        ship.pos.y += (ship.velocity.y * ship.acceleration);
 
         if(ship.pos.x > SCREENWIDTH)
         {
             ship.pos.x -= SCREENWIDTH;
-            ship.up.x -= SCREENWIDTH;
-            ship.left.x -= SCREENWIDTH;
-            ship.right.x -= SCREENWIDTH;
         }
         else if(ship.pos.x < 0)
         {
             ship.pos.x += SCREENWIDTH - RADIUS;
-            ship.up.x += SCREENWIDTH - RADIUS;
-            ship.left.x += SCREENWIDTH - RADIUS;
-            ship.right.x += SCREENWIDTH - RADIUS;
         }
         if(ship.pos.y > SCREENHEIGHT)
         {
             ship.pos.y -= SCREENHEIGHT;
-            ship.up.y -= SCREENHEIGHT;
-            ship.left.y -= SCREENHEIGHT;
-            ship.right.y -= SCREENHEIGHT;
-        }
-        else if(ship.pos.y < 0)
-        {
+        } else if(ship.pos.y < 0) 
+        { 
             ship.pos.y += SCREENHEIGHT - RADIUS;
-            ship.up.y += SCREENHEIGHT - RADIUS;
-            ship.left.y += SCREENHEIGHT - RADIUS;
-            ship.right.y += SCREENHEIGHT - RADIUS;
         }
+
+        Vector2 shipHead = Vector2Normalize(ship.velocity);
+        shipHead = Vector2Scale(shipHead,RADIUS);
+        shipHead = Vector2Add(ship.pos,shipHead);
+
+        Vector2 shipLeft = shipHead; 
+        apply2dRotation(&ship.pos, &shipLeft, 240); 
+
+        Vector2 shipRight = shipHead; 
+        apply2dRotation(&ship.pos, &shipRight, 120); 
+
+        for(int i = 0 ; i < ASTEROIDCOUNT; i++)
+        {
+            asteroids[i].pos.x += asteroids[i].velocity.x;
+            asteroids[i].pos.y += asteroids[i].velocity.y;
+
+            if(asteroids[i].pos.x > SCREENWIDTH)
+            {
+                asteroids[i].pos.x -= SCREENWIDTH;
+            }
+            else if(asteroids[i].pos.x < 0)
+            {
+                asteroids[i].pos.x += SCREENWIDTH - asteroids[i].radius;
+            }
+            if(asteroids[i].pos.y > SCREENHEIGHT)
+            {
+                asteroids[i].pos.y -= SCREENHEIGHT;
+            }
+            else if(asteroids[i].pos.y < 0)
+            {
+                asteroids[i].pos.y += SCREENHEIGHT - asteroids[i].radius;
+            }
+
+        }
+
+
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawTriangle(ship.up,ship.left,ship.right,WHITE);
-        //DrawPixelV(ship.pos,);
-        DrawRectangleV(ship.left,size,GREEN);
-        DrawRectangleV(ship.up,size,RED);
-        DrawRectangleV(ship.right,size,BLUE);
-        DrawRectangleV(ship.pos,size,YELLOW);
+
+        //DrawAsteroids 
+        for(int i = 0 ; i < ASTEROIDCOUNT ; i++)
+        {
+            DrawCircleV(asteroids[i].pos,asteroids[i].radius,GRAY);
+        }
+
+        //DrawShip
+        DrawLineV(shipHead,shipLeft,WHITE);
+        DrawLineV(shipHead,shipRight,WHITE);
+        DrawLineV(shipRight,ship.pos,WHITE);
+        DrawLineV(shipLeft,ship.pos,WHITE);
+        // 
+
+
+
+
+#ifdef DEBUG  
+        char posx[16];
+        sprintf(posx,"%f",ship.pos.x);
+
+
+        char posy[16];
+        sprintf(posy,"%f",ship.pos.y);
+
+        DrawText(posx,0,0,10,GREEN);
+        DrawText(posy,10,10,10,GREEN);
+
+        DrawRectangleV(ship.pos,size,GREEN);
+        DrawRectangleV(shipHead,size,RED);
+        DrawRectangleV(shipLeft,size,BLUE);
+        DrawRectangleV(shipRight,size,WHITE);
+
+
+        //DrawLineV(ship.pos,shipHead,RED);
         //
+        //DrawRectangleV(v1,size,GREEN);
+        //DrawRectangleV(v2,size,RED);
+        //DrawRectangleV(v3,size,BLUE);
+        //DrawRectangleV(ship.pos,size,YELLOW);
         //DrawCircleLinesV(ship.pos, RADIUS, RED);
+#endif
+
         EndDrawing();
     }
     CloseWindow();        
     return 0;
 }
 
-void apply2dRotation(struct player* ship, Vector2* vec,float* angle)
+//rotaion around a arbiratary point 
+void apply2dRotation(Vector2* shipPos, Vector2* vec,float angle)
 {
-    float newAngle = *angle;
-    if(newAngle < 0)
-    {
-        newAngle = (2 * PI) + newAngle;
-    }
+    float newAngle = angle * DEG2RAD;
 
-    //float newX = (vec->x - (float)centerX) * cos(newAngle) - (vec->y - (float)centerY)* sin(newAngle); 
-    //float newY = (vec->x - (float)centerX) * sin(newAngle) + (vec->y - (float)centerY)* cos(newAngle); 
+    float newX = (vec->x - shipPos->x) * cos(newAngle) - (vec->y - shipPos->y)* sin(newAngle); 
+    float newY = (vec->x - shipPos->x) * sin(newAngle) + (vec->y - shipPos->y)* cos(newAngle); 
 
-    float newX = (vec->x - ship->pos.x) * cos(newAngle) - (vec->y - ship->pos.y)* sin(newAngle); 
-    float newY = (vec->x - ship->pos.x) * sin(newAngle) + (vec->y - ship->pos.y)* cos(newAngle); 
-
-    vec->x = newX + ship->pos.x;
-    vec->y = newY + ship->pos.y;
+    vec->x = newX + shipPos->x;
+    vec->y = newY + shipPos->y;
 
     return;
 }
