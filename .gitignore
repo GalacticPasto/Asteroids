@@ -2,4 +2,5 @@
 *.pdb
 *.ilk
 *.obj
+*.cod
 /build
